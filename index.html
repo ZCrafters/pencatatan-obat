@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pembelian Obat - Rumah Sakit</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        .file-upload {
+            position: relative;
+            overflow: hidden;
+        }
+        .file-upload input {
+            position: absolute;
+            top: 0;
+            right: 0;
+            margin: 0;
+            padding: 0;
+            font-size: 20px;
+            cursor: pointer;
+            opacity: 0;
+            filter: alpha(opacity=0);
+        }
+        .scrollable-table {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .scrollable-table thead th {
+            position: sticky;
+            top: 0;
+            background-color: #f8fafc;
+            z-index: 10;
+        }
+    </style>
+    <style>
+        /* 3D Animation Container */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        /* Add this to your existing styles */
+        .login-card {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        /* Add subtle animation to the login form */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .login-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+    </style>
+    
+    <!-- Add this right after the opening <body> tag -->
+    <div id="canvas-container">
+        <canvas id="bg-canvas"></canvas>
+    </div>
+    
+    <!-- Add this script before the closing </body> tag -->
+    <script>
+        // 3D Background Animation
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('bg-canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+            window.addEventListener('resize', resizeCanvas);
+            resizeCanvas();
+            
+            // Particle system
+            const particles = [];
+            const particleCount = Math.floor(window.innerWidth / 10); // Adjust density based on screen size
+            
+            // Particle class
+            class Particle {
+                constructor() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.size = Math.random() * 3 + 1;
+                    this.speedX = Math.random() * 2 - 1;
+                    this.speedY = Math.random() * 2 - 1;
+                    this.color = `hsla(${Math.random() * 60 + 200}, 70%, 60%, ${Math.random() * 0.4 + 0.1})`;
+                    this.depth = Math.random() * 3 + 1;
+                }
+                
+                update() {
+                    this.x += this.speedX * this.depth * 0.3;
+                    this.y += this.speedY * this.depth * 0.3;
+                    
+                    // Bounce off edges
+                    if (this.x > canvas.width + 50 || this.x < -50) this.speedX *= -1;
+                    if (this.y > canvas.height + 50 || this.y < -50) this.speedY *= -1;
+                }
+                
+                draw() {
+                    ctx.fillStyle = this.color;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            
+            // Create particles
+            function initParticles() {
+                for (let i = 0; i < particleCount; i++) {
+                    particles.push(new Particle());
+                }
+            }
+            
+            // Animation loop
+            function animate() {
+                // Clear with semi-transparent black for trail effect
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Update and draw particles
+                for (let i = 0; i < particles.length; i++) {
+                    particles[i].update();
+                    particles[i].draw();
+                    
+                    // Draw lines between close particles
+                    for (let j = i; j < particles.length; j++) {
+                        const dx = particles[i].x - particles[j].x;
+                        const dy = particles[i].y - particles[j].y;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+                        
+                        if (distance < 100) {
+                            ctx.strokeStyle = `hsla(220, 70%, 60%, ${1 - distance / 100})`;
+                            ctx.lineWidth = 0.5;
+                            ctx.beginPath();
+                            ctx.moveTo(particles[i].x, particles[i].y);
+                            ctx.lineTo(particles[j].x, particles[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                requestAnimationFrame(animate);
+            }
+            
+            // Mouse interaction
+            let mouseX = 0;
+            let mouseY = 0;
+            let mouseRadius = 150;
+            
+            document.addEventListener('mousemove', function(e) {
+                mouseX = e.clientX;
+                mouseY = e.clientY;
+            });
+            
+            // Initialize and start animation
+            initParticles();
+            animate();
+            
+            // Add parallax effect to login card
+            const loginCard = document.querySelector('.login-card');
+            if (loginCard) {
+                document.addEventListener('mousemove', (e) => {
+                    const xAxis = (window.innerWidth / 2 - e.pageX) / 25;
+                    const yAxis = (window.innerHeight / 2 - e.pageY) / 25;
+                    loginCard.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+                });
+                
+                // Reset on mouse leave
+                loginCard.addEventListener('mouseleave', () => {
+                    loginCard.style.transition = 'all 0.5s ease';
+                    loginCard.style.transform = 'rotateY(0deg) rotateX(0deg)';
+                    setTimeout(() => {
+                        loginCard.style.transition = '';
+                    }, 500);
+                });
+            }
+        });
+    </script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 z-50">
+        <div class="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md mx-4">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </div>
+                <h1 class="text-2xl font-bold text-gray-800">Selamat Datang</h1>
+                <p class="text-gray-500">Silakan masuk ke akun Anda</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" id="username" name="username" required 
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" name="password" required
+                        class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition">
+                </div>
+                
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember" type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="remember" class="ml-2 block text-sm text-gray-700">Ingat saya</label>
+                    </div>
+                    <a href="#" class="text-sm text-blue-600 hover:text-blue-500">Lupa password?</a>
+                </div>
+                
+                <button type="submit" 
+                    class="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-200 transform hover:scale-[1.02]">
+                    Masuk
+                </button>
+                
+                <div id="errorMessage" class="text-red-500 text-sm text-center mt-2 hidden">
+                    Username atau password salah!
+                </div>
+            </form>
+            
+            <div class="mt-6 text-center text-sm text-gray-500">
+                © 2025 Aplikasi Pencatatan. All rights reserved.
+            </div>
+        </div>
+    </div>
+
+    <!-- Wrap your existing dashboard content in this div -->
+    <div id="dashboardContent" class="hidden">
+        <!-- Your existing dashboard content here -->
+    </div>
+
+    <script>
+        // Add this script at the end of your body, before the closing </body> tag
+        document.addEventListener('DOMContentLoaded', function() {
+            const loginForm = document.getElementById('loginForm');
+            const errorMessage = document.getElementById('errorMessage');
+            const dashboardContent = document.getElementById('dashboardContent');
+            const loginOverlay = document.getElementById('loginOverlay');
+            
+            // Check if user is already logged in
+            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+            if (isLoggedIn === 'true') {
+                showDashboard();
+            } else {
+                showLogin();
+            }
+            
+            // Login form submission
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                // Simple validation (in real app, validate with server)
+                if (username === 'admin' && password === 'admin') {
+                    // Store login status
+                    sessionStorage.setItem('isLoggedIn', 'true');
+                    showDashboard();
+                } else {
+                    // Show error
+                    errorMessage.classList.remove('hidden');
+                    setTimeout(() => {
+                        errorMessage.classList.add('hidden');
+                    }, 3000);
+                }
+            });
+            
+            function showDashboard() {
+                loginOverlay.classList.add('hidden');
+                dashboardContent.classList.remove('hidden');
+                // Initialize any dashboard components
+                if (typeof initializeCharts === 'function') {
+                    initializeCharts();
+                }
+            }
+            
+            function showLogin() {
+                loginOverlay.classList.remove('hidden');
+                dashboardContent.classList.add('hidden');
+            }
+            
+            // Add logout functionality (call this from your logout button)
+            window.logout = function() {
+                sessionStorage.removeItem('isLoggedIn');
+                showLogin();
+            };
+        });
+    </script>
+    <!-- Dashboard -->
+    <div id="dashboardContent" class="container mx-auto px-2 sm:px-4 py-4">
+        <!-- Header -->
+        <div class="mb-4">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                <h1 class="text-xl sm:text-2xl font-bold text-white-800">Dashboard Pembelian Obat</h1>
+                <div class="flex gap-1 sm:gap-2">
+                    <button onclick="showPivotTable()" class="px-2 py-1 sm:px-3 sm:py-1 bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 transition text-xs sm:text-sm">
+                        Pivot Table
+                    </button>
+                    <button onclick="showDashboard()" class="px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition text-xs sm:text-sm">
+                        Dashboard
+                    </button>
+                </div>
+            </div>
+            <p class="text-xs sm:text-sm text-white-600 mb-2">
+                Halaman ini digunakan oleh petugas farmasi untuk mencatat dan menganalisis data pembelian obat.
+            </p>
+            <div class="bg-blue-100 p-2 sm:p-3 rounded-lg">
+                <p class="text-xs sm:text-sm text-blue-800 font-medium">Total Pembelian</p>
+                <p class="text-lg sm:text-xl font-bold text-blue-900" id="totalPurchase">Rp 0</p>
+            </div>
+        </div>
+
+        <!-- Purchase Form Section -->
+        <div id="purchaseForm" class="bg-white rounded-lg shadow-md p-6 mb-8 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Form Pembelian Obat</h2>
+            <form id="newPurchaseForm" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label for="purchaseDate" class="block text-sm font-medium text-gray-700">Tanggal Pembelian</label>
+                    <input type="date" id="purchaseDate" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="drugName" class="block text-sm font-medium text-gray-700">Nama Obat</label>
+                    <input type="text" id="drugName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="drugForm" class="block text-sm font-medium text-gray-700">Sediaan</label>
+                    <select id="drugForm" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="">Pilih Sediaan</option>
+                        <option value="Tablet">Tablet</option>
+                        <option value="Kapsul">Kapsul</option>
+                        <option value="Sirup">Sirup</option>
+                        <option value="Injeksi">Injeksi</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="quantity" class="block text-sm font-medium text-gray-700">Jumlah</label>
+                    <input type="number" id="quantity" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="unitPrice" class="block text-sm font-medium text-gray-700">Harga Satuan</label>
+                    <input type="number" id="unitPrice" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div>
+                    <label for="supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
+                    <input type="text" id="supplier" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                </div>
+                <div class="md:col-span-2">
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                        Proses Pembelian
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-4">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">Upload Data Pembelian Baru</h2>
+            </div>
+            <div class="mt-4">
+                <div class="file-upload bg-blue-50 border-2 border-dashed border-blue-200 rounded-lg p-8 text-center">
+                    <label for="excelFile" class="block text-blue-800 font-medium mb-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                        <span class="block">Drag & drop file Excel atau klik untuk memilih</span>
+                    </label>
+                    <input type="file" id="excelFile" accept=".xlsx, .xls" class="hidden" />
+                    <p class="text-sm text-gray-500 mt-2">Format file harus Excel dengan kolom sesuai template</p>
+                </div>
+                <div class="mt-4 flex justify-between">
+                    <button onclick="togglePurchaseMethod()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                        <span id="toggleMethodText">Tambah Manual</span>
+                    </button>
+                    <button onclick="downloadTemplate()" class="px-4 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 transition">
+                        Download Template Excel
+                    </button>
+                    <button onclick="exportToExcel()" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition">
+                        Export Data ke Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white rounded-lg shadow-md p-3 sm:p-4 mb-4">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Filter Data</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label for="dateFilter" class="block text-sm font-medium text-gray-700">Tanggal</label>
+                    <select id="dateFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border">
+                        <option value="all">Semua Tanggal</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="officerFilter" class="block text-sm font-medium text-gray-700">Petugas</label>
+                    <select id="officerFilter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md border">
+                        <option value="all">Semua Petugas</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button onclick="applyFilters()" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                        Terapkan Filter
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 gap-4 mb-4">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Jumlah Pembelian per Obat</h2>
+                <div class="h-80">
+                    <canvas id="drugQuantityChart"></canvas>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Distribusi Pembelian per Supplier</h2>
+                <div class="h-80">
+                    <canvas id="supplierDistributionChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Table -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-4">
+            <div class="p-6">
+                <h2 class="text-xl font-semibold text-gray-800">Data Pembelian Obat</h2>
+            </div>
+            <div class="scrollable-table">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tanggal</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hari</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Petugas</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Obat</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sediaan</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Satuan</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Jumlah Beli</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Harga Satuan</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Harga</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchaseData" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="10" class="px-6 py-4 text-center text-gray-500">Belum ada data. Silakan upload file Excel.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Page -->
+    <div id="paymentPage" class="fixed inset-0 bg-white z-50 hidden overflow-y-auto">
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-2xl font-bold text-gray-800">Konfirmasi Pembayaran</h2>
+                <button onclick="cancelPayment()" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Rincian Pembelian</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <p class="text-sm text-gray-500">Nama Obat</p>
+                        <p id="paymentDrugName" class="font-medium">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Supplier</p>
+                        <p id="paymentSupplier" class="font-medium">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Jumlah</p>
+                        <p id="paymentQuantity" class="font-medium">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-500">Harga Satuan</p>
+                        <p id="paymentUnitPrice" class="font-medium">-</p>
+                    </div>
+                </div>
+                <div class="border-t border-gray-200 pt-4">
+                    <div class="flex justify-between">
+                        <p class="text-lg font-semibold">Total Pembayaran</p>
+                        <p id="paymentAmount" class="text-2xl font-bold text-blue-600">Rp 0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Metode Pembayaran</h3>
+                <div class="space-y-3">
+                    <div class="flex items-center">
+                        <input type="radio" id="transferBank" name="paymentMethod" value="transfer" class="h-4 w-4 text-blue-600 focus:ring-blue-500" checked>
+                        <label for="transferBank" class="ml-3 block text-sm font-medium text-gray-700">Transfer Bank</label>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="radio" id="tunai" name="paymentMethod" value="tunai" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                        <label for="tunai" class="ml-3 block text-sm font-medium text-gray-700">Tunai</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Konfirmasi Penerimaan</h3>
+                <div class="flex items-center mb-4">
+                    <input type="checkbox" id="confirmReceive" class="h-4 w-4 text-blue-600 focus:ring-blue-500">
+                    <label for="confirmReceive" class="ml-3 block text-sm font-medium text-gray-700">Saya telah menerima barang</label>
+                </div>
+                <p class="text-sm text-gray-500">Centang kotak ini untuk mengkonfirmasi bahwa barang telah diterima sebelum melanjutkan pembayaran.</p>
+            </div>
+
+            <div class="flex justify-end space-x-4">
+                <button onclick="cancelPayment()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition">
+                    Batalkan
+                </button>
+                <button onclick="confirmPayment()" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                    Konfirmasi Pembayaran
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Success Purchase Notification -->
+    <div id="successNotification" class="fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg hidden z-50">
+        <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span id="successMessage">Pembelian berhasil diproses!</span>
+        </div>
+    </div>
+
+    <!-- Success Receive Notification -->
+    <div id="receiveNotification" class="fixed bottom-4 right-4 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-lg hidden z-50">
+        <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            <span id="receiveMessage">Barang berhasil diterima!</span>
+        </div>
+    </div>
+
+    <!-- Pivot Table Page -->
+    <div id="pivotTablePage" class="container mx-auto px-4 py-8 hidden overflow-x-auto">
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Pivot Table Pembelian Obat</h2>
+                <button onclick="showDashboard()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">
+                    Kembali ke Dashboard
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Baris</label>
+                    <select id="pivotRow" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                        <option value="Supplier">Supplier</option>
+                        <option value="Nama Obat">Nama Obat</option>
+                        <option value="Sediaan">Sediaan</option>
+                        <option value="Petugas">Petugas</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Kolom</label>
+                    <select id="pivotColumn" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                        <option value="Nama Obat">Nama Obat</option>
+                        <option value="Supplier">Supplier</option>
+                        <option value="Sediaan">Sediaan</option>
+                        <option value="Petugas">Petugas</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nilai</label>
+                    <select id="pivotValue" class="w-full px-4 py-2 border border-gray-300 rounded-md">
+                        <option value="Jumlah Beli">Jumlah Beli</option>
+                        <option value="Total Harga">Total Harga</option>
+                        <option value="Harga Satuan">Harga Satuan</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button onclick="generatePivotTable()" class="mb-6 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                Generate Pivot Table
+            </button>
+            
+            <div class="overflow-x-auto">
+                <table id="pivotTable" class="min-w-full border border-gray-200 text-sm md:text-base">
+                    <thead class="bg-gray-50">
+                        <tr id="pivotHeaders" class="whitespace-nowrap"></tr>
+                    </thead>
+                    <tbody id="pivotBody" class="divide-y divide-gray-200 whitespace-nowrap"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Validation Notification -->
+    <div id="validationNotification" class="fixed bottom-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg hidden z-50">
+        <div class="flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            <span id="validationMessage">Harap isi semua field dengan benar!</span>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let purchaseData = [];
+        let filteredData = [];
+        let drugQuantityChart = null;
+        let supplierDistributionChart = null;
+
+        // Initialize charts
+        function initializeCharts() {
+            const drugQuantityCtx = document.getElementById('drugQuantityChart').getContext('2d');
+            const supplierDistributionCtx = document.getElementById('supplierDistributionChart').getContext('2d');
+            
+            drugQuantityChart = new Chart(drugQuantityCtx, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Jumlah Pembelian',
+                        data: [],
+                        backgroundColor: '#3b82f6',
+                        borderColor: '#2563eb',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Jumlah'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Nama Obat'
+                            }
+                        }
+                    }
+                }
+            });
+
+            supplierDistributionChart = new Chart(supplierDistributionCtx, {
+                type: 'pie',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        data: [],
+                        backgroundColor: [
+                            '#3b82f6',
+                            '#60a5fa',
+                            '#93c5fd',
+                            '#bfdbfe',
+                            '#dbeafe',
+                            '#eff6ff'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: Rp ${value.toLocaleString()} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Handle file upload
+        document.getElementById('excelFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                // Convert to array of arrays
+                const aoaData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                
+                // Skip header row and process data
+                purchaseData = aoaData.slice(1).map(row => {
+                    const item = {
+                        Tanggal: row[0],
+                        Hari: row[1],
+                        Petugas: row[2],
+                        Supplier: row[3],
+                        'Nama Obat': row[4],
+                        Sediaan: row[5],
+                        Satuan: row[6],
+                        'Jumlah Beli': Number(row[7]),
+                        'Harga Satuan': Number(row[8]),
+                        'Total Harga': Number(row[9])
+                    };
+                    // Convert date if it's in Excel serial format
+                    if (typeof item.Tanggal === 'number') {
+                        const excelDate = item.Tanggal;
+                        const utcDays = Math.floor(excelDate - 25569);
+                        const utcValue = utcDays * 86400;
+                        const dateInfo = new Date(utcValue * 1000);
+                        item.Tanggal = dateInfo.toISOString().split('T')[0];
+                    }
+                    
+                    // Ensure numeric fields are numbers
+                    item['Jumlah Beli'] = Number(item['Jumlah Beli']);
+                    item['Harga Satuan'] = Number(item['Harga Satuan']);
+                    item['Total Harga'] = Number(item['Total Harga']);
+                    
+                    return item;
+                });
+                
+                // Update UI with new data
+                updateDashboard(purchaseData);
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // Update dashboard with data
+        function updateDashboard(data) {
+            filteredData = [...data];
+            
+            // Update table
+            updateTable(data);
+            
+            // Update total purchase
+            updateTotalPurchase(data);
+            
+            // Update charts
+            updateCharts(data);
+            
+            // Update filters
+            updateFilters(data);
+        }
+
+        // Update table with data
+        function updateTable(data) {
+            const tableBody = document.getElementById('purchaseData');
+            
+            if (data.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="10" class="px-6 py-4 text-center text-gray-500">Tidak ada data yang sesuai dengan filter.</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let rows = '';
+            data.forEach(item => {
+                rows += `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.Tanggal || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.Hari || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.Petugas || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.Supplier || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item['Nama Obat'] || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.Sediaan || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.Satuan || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item['Jumlah Beli'].toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Rp ${item['Harga Satuan'].toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-900">Rp ${item['Total Harga'].toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            
+            tableBody.innerHTML = rows;
+        }
+
+        // Update total purchase amount
+        function updateTotalPurchase(data) {
+            const total = data.reduce((sum, item) => sum + (item['Total Harga'] || 0), 0);
+            document.getElementById('totalPurchase').textContent = `Rp ${total.toLocaleString()}`;
+        }
+
+        // Update charts with data
+        function updateCharts(data) {
+            // Drug quantity chart
+            const drugQuantityMap = {};
+            data.forEach(item => {
+                const drugName = item['Nama Obat'] || 'Unknown';
+                drugQuantityMap[drugName] = (drugQuantityMap[drugName] || 0) + (item['Jumlah Beli'] || 0);
+            });
+            
+            const drugNames = Object.keys(drugQuantityMap);
+            const drugQuantities = Object.values(drugQuantityMap);
+            
+            drugQuantityChart.data.labels = drugNames;
+            drugQuantityChart.data.datasets[0].data = drugQuantities;
+            drugQuantityChart.update();
+            
+            // Supplier distribution chart
+            const supplierDistributionMap = {};
+            data.forEach(item => {
+                const supplier = item.Supplier || 'Unknown';
+                supplierDistributionMap[supplier] = (supplierDistributionMap[supplier] || 0) + (item['Total Harga'] || 0);
+            });
+            
+            const suppliers = Object.keys(supplierDistributionMap);
+            const supplierTotals = Object.values(supplierDistributionMap);
+            
+            supplierDistributionChart.data.labels = suppliers;
+            supplierDistributionChart.data.datasets[0].data = supplierTotals;
+            supplierDistributionChart.update();
+        }
+
+        // Update filter options
+        function updateFilters(data) {
+            const dateFilter = document.getElementById('dateFilter');
+            const officerFilter = document.getElementById('officerFilter');
+            
+            // Get unique dates and officers
+            const dates = [...new Set(data.map(item => item.Tanggal))].filter(Boolean);
+            const officers = [...new Set(data.map(item => item.Petugas))].filter(Boolean);
+            
+            // Update date filter
+            dateFilter.innerHTML = '<option value="all">Semua Tanggal</option>';
+            dates.forEach(date => {
+                dateFilter.innerHTML += `<option value="${date}">${date}</option>`;
+            });
+            
+            // Update officer filter
+            officerFilter.innerHTML = '<option value="all">Semua Petugas</option>';
+            officers.forEach(officer => {
+                officerFilter.innerHTML += `<option value="${officer}">${officer}</option>`;
+            });
+        }
+
+        // Apply filters
+        function applyFilters() {
+            const dateFilter = document.getElementById('dateFilter').value;
+            const officerFilter = document.getElementById('officerFilter').value;
+            
+            let filtered = [...purchaseData];
+            
+            if (dateFilter !== 'all') {
+                filtered = filtered.filter(item => item.Tanggal === dateFilter);
+            }
+            
+            if (officerFilter !== 'all') {
+                filtered = filtered.filter(item => item.Petugas === officerFilter);
+            }
+            
+            updateDashboard(filtered);
+        }
+
+        // Export current data to Excel
+        function exportToExcel() {
+            if (purchaseData.length === 0) {
+                showValidation('Tidak ada data untuk diexport');
+                return;
+            }
+
+            // Prepare headers
+            const headers = [
+                "Tanggal", "Hari", "Petugas", "Supplier", 
+                "Nama Obat", "Sediaan", "Satuan", 
+                "Jumlah Beli", "Harga Satuan", "Total Harga"
+            ];
+
+            // Prepare data rows
+            const dataRows = purchaseData.map(item => [
+                item.Tanggal,
+                item.Hari,
+                item.Petugas,
+                item.Supplier,
+                item['Nama Obat'],
+                item.Sediaan,
+                item.Satuan,
+                item['Jumlah Beli'],
+                item['Harga Satuan'],
+                item['Total Harga']
+            ]);
+
+            // Combine headers and data
+            const exportData = [headers, ...dataRows];
+
+            // Create worksheet and workbook
+            const worksheet = XLSX.utils.aoa_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Data Pembelian");
+
+            // Generate file name with current date
+            const today = new Date();
+            const dateStr = today.toISOString().split('T')[0];
+            const fileName = `Data_Pembelian_Obat_${dateStr}.xlsx`;
+
+            // Export to Excel
+            XLSX.writeFile(workbook, fileName);
+            
+            showSuccess('Data berhasil diexport ke Excel!');
+        }
+
+        // Download Excel template
+        function downloadTemplate() {
+            const templateData = [
+                ["Tanggal", "Hari", "Petugas", "Supplier", "Nama Obat", "Sediaan", "Satuan", "Jumlah Beli", "Harga Satuan", "Total Harga"],
+                ["2023-01-01", "Senin", "Nama Petugas", "Nama Supplier", "Nama Obat", "Tablet", "Box", 10, 50000, 500000]
+            ];
+            
+            const worksheet = XLSX.utils.json_to_sheet(templateData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Template Pembelian");
+            XLSX.writeFile(workbook, "Template_Pembelian_Obat.xlsx");
+        }
+
+        // Toggle between upload and manual purchase
+        function togglePurchaseMethod() {
+            const uploadSection = document.querySelector('.file-upload').closest('div');
+            const purchaseForm = document.getElementById('purchaseForm');
+            const toggleBtn = document.getElementById('toggleMethodText');
+            
+            if (purchaseForm.classList.contains('hidden')) {
+                purchaseForm.classList.remove('hidden');
+                uploadSection.classList.add('hidden');
+                toggleBtn.textContent = 'Upload Excel';
+            } else {
+                purchaseForm.classList.add('hidden');
+                uploadSection.classList.remove('hidden');
+                toggleBtn.textContent = 'Tambah Manual';
+            }
+        }
+
+        // Handle new purchase form submission
+        document.getElementById('newPurchaseForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Validate form
+            const isValid = validatePurchaseForm();
+            if (!isValid) {
+                showValidation('Harap isi semua field dengan benar!');
+                return;
+            }
+            
+            // Calculate total
+            const quantity = parseInt(document.getElementById('quantity').value);
+            const unitPrice = parseInt(document.getElementById('unitPrice').value);
+            const total = quantity * unitPrice;
+            
+            // Show payment modal
+            document.getElementById('paymentAmount').textContent = `Rp ${total.toLocaleString()}`;
+            document.getElementById('paymentModal').classList.remove('hidden');
+        });
+
+        // Validate purchase form
+        function validatePurchaseForm() {
+            const requiredFields = [
+                'purchaseDate', 'drugName', 'drugForm', 
+                'quantity', 'unitPrice', 'supplier'
+            ];
+            
+            for (const fieldId of requiredFields) {
+                const field = document.getElementById(fieldId);
+                if (!field.value.trim()) {
+                    field.focus();
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // Show validation error
+        function showValidation(message) {
+            const notification = document.getElementById('validationNotification');
+            document.getElementById('validationMessage').textContent = message;
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Show success notification
+        function showSuccess(message) {
+            const notification = document.getElementById('successNotification');
+            document.getElementById('successMessage').textContent = message;
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Show receive notification
+        function showReceive(message) {
+            const notification = document.getElementById('receiveNotification');
+            document.getElementById('receiveMessage').textContent = message;
+            notification.classList.remove('hidden');
+            
+            setTimeout(() => {
+                notification.classList.add('hidden');
+            }, 3000);
+        }
+
+        // Cancel payment
+        function cancelPayment() {
+            document.getElementById('paymentModal').classList.add('hidden');
+        }
+
+        // Confirm payment
+        function confirmPayment() {
+            const isReceived = document.getElementById('confirmReceive').checked;
+            
+            if (!isReceived) {
+                showValidation('Harap konfirmasi penerimaan barang terlebih dahulu');
+                return;
+            }
+            
+            // In a real app, you would process payment here
+            document.getElementById('paymentPage').classList.add('hidden');
+            
+            // Add to purchase data
+            const newPurchase = {
+                Tanggal: document.getElementById('purchaseDate').value,
+                Hari: getDayName(new Date(document.getElementById('purchaseDate').value)),
+                Petugas: 'Admin', // Default admin user
+                Supplier: document.getElementById('supplier').value,
+                'Nama Obat': document.getElementById('drugName').value,
+                Sediaan: document.getElementById('drugForm').value,
+                Satuan: 'Pcs',
+                'Jumlah Beli': parseInt(document.getElementById('quantity').value),
+                'Harga Satuan': parseInt(document.getElementById('unitPrice').value),
+                'Total Harga': parseInt(document.getElementById('quantity').value) * parseInt(document.getElementById('unitPrice').value),
+                'Status': 'Lunas'
+            };
+            
+            purchaseData.unshift(newPurchase);
+            updateDashboard(purchaseData);
+            
+            // Reset form
+            document.getElementById('newPurchaseForm').reset();
+            
+            // Show notifications
+            showSuccess('Pembelian berhasil diproses!');
+            showReceive('Barang telah diterima dan dicatat!');
+        }
+
+        // Helper function to get day name
+        function getDayName(date) {
+            const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+            return days[date.getDay()];
+        }
+
+        // Navigation functions
+        function showPivotTable() {
+            try {
+                document.getElementById('dashboardContent').classList.add('hidden');
+                document.getElementById('pivotTablePage').classList.remove('hidden');
+                // Scroll to top for mobile
+                window.scrollTo({top: 0, behavior: 'smooth'});
+                generatePivotTable();
+            } catch (error) {
+                console.error('Error showing pivot table:', error);
+                showValidation('Error showing pivot table');
+            }
+        }
+        
+        function showDashboard() {
+            try {
+                document.getElementById('dashboardContent').classList.remove('hidden');
+                document.getElementById('pivotTablePage').classList.add('hidden');
+                // Scroll to top for mobile
+                window.scrollTo({top: 0, behavior: 'smooth'});
+            } catch (error) {
+                console.error('Error showing dashboard:', error);
+                showValidation('Error showing dashboard');
+            }
+        }
+        
+        // Generate Pivot Table
+        function generatePivotTable() {
+            try {
+                const rowField = document.getElementById('pivotRow').value;
+                const columnField = document.getElementById('pivotColumn').value;
+                const valueField = document.getElementById('pivotValue').value;
+                
+                if (!rowField || !columnField || !valueField) {
+                    throw new Error('Please select all pivot table fields');
+                }
+                
+                // Group data
+                const pivotData = {};
+                const columns = new Set();
+                
+                filteredData.forEach(item => {
+                    const rowKey = item[rowField] || 'Unknown';
+                    const colKey = item[columnField] || 'Unknown';
+                    const value = parseFloat(item[valueField]) || 0;
+                    
+                    columns.add(colKey);
+                    
+                    if (!pivotData[rowKey]) {
+                        pivotData[rowKey] = {};
+                    }
+                    
+                    if (!pivotData[rowKey][colKey]) {
+                        pivotData[rowKey][colKey] = 0;
+                    }
+                    
+                    pivotData[rowKey][colKey] += value;
+                });
+                
+                // Generate headers
+                const headerRow = document.getElementById('pivotHeaders');
+                headerRow.innerHTML = `<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200">${rowField}</th>`;
+                
+                const sortedColumns = Array.from(columns).sort();
+                sortedColumns.forEach(col => {
+                    headerRow.innerHTML += `<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 border-b border-gray-200">${col}</th>`;
+                });
+                
+                // Generate rows
+                const pivotBody = document.getElementById('pivotBody');
+                pivotBody.innerHTML = '';
+                
+                Object.keys(pivotData).sort().forEach(rowKey => {
+                    let rowHtml = `<tr>
+                        <td class="px-4 py-2 text-sm font-medium text-gray-900 border-b border-gray-200">${rowKey}</td>`;
+                    
+                    sortedColumns.forEach(colKey => {
+                        const value = pivotData[rowKey][colKey] || 0;
+                        const formattedValue = valueField === 'Total Harga' || valueField === 'Harga Satuan' 
+                            ? `Rp ${value.toLocaleString()}` 
+                            : value.toLocaleString();
+                        rowHtml += `<td class="px-4 py-2 text-sm text-gray-500 border-b border-gray-200">${formattedValue}</td>`;
+                    });
+                    
+                    rowHtml += `</tr>`;
+                    pivotBody.innerHTML += rowHtml;
+                });
+                
+            } catch (error) {
+                console.error('Error generating pivot table:', error);
+                showValidation('Error generating pivot table: ' + error.message);
+            }
+        }
+        
+        // Initialize dashboard on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+        });
+    </script>
+</body>
+</html>
