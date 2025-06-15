@@ -990,14 +990,22 @@
                 return;
             }
             
-            // Calculate total
+            // Get form values
+            const drugName = document.getElementById('drugName').value;
+            const supplier = document.getElementById('supplier').value;
             const quantity = parseInt(document.getElementById('quantity').value);
             const unitPrice = parseInt(document.getElementById('unitPrice').value);
             const total = quantity * unitPrice;
             
-            // Show payment modal
+            // Update payment page with form data
+            document.getElementById('paymentDrugName').textContent = drugName;
+            document.getElementById('paymentSupplier').textContent = supplier;
+            document.getElementById('paymentQuantity').textContent = quantity;
+            document.getElementById('paymentUnitPrice').textContent = `Rp ${unitPrice.toLocaleString()}`;
             document.getElementById('paymentAmount').textContent = `Rp ${total.toLocaleString()}`;
-            document.getElementById('paymentModal').classList.remove('hidden');
+            
+            // Show payment page
+            document.getElementById('paymentPage').classList.remove('hidden');
         });
 
         // Validate purchase form
@@ -1053,7 +1061,7 @@
 
         // Cancel payment
         function cancelPayment() {
-            document.getElementById('paymentModal').classList.add('hidden');
+            document.getElementById('paymentPage').classList.add('hidden');
         }
 
         // Confirm payment
