@@ -210,8 +210,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                 </div>
-                <h1 class="text-2xl font-bold text-gray-800">Selamat Datang Putri Zee Hanum</h1>
-                <p class="text-gray-500">Silakan pulang kerumah</p>
+                <h1 class="text-2xl font-bold text-gray-800">Selamat Datang</h1>
+                <p class="text-gray-500">Silakan masuk untuk mengakses dashboard</p>
             </div>
             
             <form id="loginForm" class="space-y-4">
@@ -327,6 +327,9 @@
                     <button onclick="showDashboard()" class="px-2 py-1 sm:px-3 sm:py-1 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition text-xs sm:text-sm">
                         Dashboard
                     </button>
+                    <button onclick="showDirectPurchase()" class="px-2 py-1 sm:px-3 sm:py-1 bg-green-100 text-green-700 rounded-md hover:bg-green-200 transition text-xs sm:text-sm">
+                        Beli Langsung
+                    </button>
                 </div>
             </div>
             <p class="text-xs sm:text-sm text-white-600 mb-2">
@@ -370,7 +373,18 @@
                 </div>
                 <div>
                     <label for="supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
-                    <input type="text" id="supplier" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                    <select id="supplier" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
+                        <option value="">Pilih Supplier</option>
+                        <option value="Kalbe Farma">Kalbe Farma</option>
+                        <option value="Dexa Medica">Dexa Medica</option>
+                        <option value="Phapros">Phapros</option>
+                        <option value="Kimia Farma">Kimia Farma</option>
+                        <option value="Sanbe">Sanbe</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="officerName" class="block text-sm font-medium text-gray-700">Nama Petugas</label>
+                    <input type="text" id="officerName" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md">
                 </div>
                 <div class="md:col-span-2">
                     <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition">
@@ -902,6 +916,35 @@
             updateDashboard(filtered);
         }
 
+        // Export receipt to Excel
+        function exportReceipt(purchase) {
+            // Prepare receipt data
+            const receiptData = [
+                ["RESI PEMBELIAN OBAT"],
+                ["Tanggal", purchase.Tanggal],
+                ["Supplier", purchase.Supplier],
+                ["Nama Obat", purchase['Nama Obat']],
+                ["Sediaan", purchase.Sediaan],
+                ["Jumlah", purchase['Jumlah Beli']],
+                ["Harga Satuan", `Rp ${purchase['Harga Satuan'].toLocaleString()}`],
+                ["Total Harga", `Rp ${purchase['Total Harga'].toLocaleString()}`],
+                ["Petugas", purchase.Petugas],
+                ["", ""],
+                ["Terima kasih telah berbelanja"]
+            ];
+
+            // Create worksheet and workbook
+            const worksheet = XLSX.utils.aoa_to_sheet(receiptData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Resi Pembelian");
+
+            // Generate file name
+            const fileName = `Resi_Pembelian_${purchase.Tanggal}_${purchase['Nama Obat'].replace(/\s+/g, '_')}.xlsx`;
+
+            // Export to Excel
+            XLSX.writeFile(workbook, fileName);
+        }
+
         // Export current data to Excel
         function exportToExcel() {
             if (purchaseData.length === 0) {
@@ -1012,7 +1055,8 @@
         function validatePurchaseForm() {
             const requiredFields = [
                 'purchaseDate', 'drugName', 'drugForm', 
-                'quantity', 'unitPrice', 'supplier'
+                'quantity', 'unitPrice', 'supplier',
+                'officerName'
             ];
             
             for (const fieldId of requiredFields) {
@@ -1080,7 +1124,7 @@
             const newPurchase = {
                 Tanggal: document.getElementById('purchaseDate').value,
                 Hari: getDayName(new Date(document.getElementById('purchaseDate').value)),
-                Petugas: 'Admin', // Default admin user
+                Petugas: document.getElementById('officerName').value || 'Admin',
                 Supplier: document.getElementById('supplier').value,
                 'Nama Obat': document.getElementById('drugName').value,
                 Sediaan: document.getElementById('drugForm').value,
@@ -1097,15 +1141,27 @@
             // Reset form
             document.getElementById('newPurchaseForm').reset();
             
+            // Export receipt
+            exportReceipt(newPurchase);
+            
             // Show notifications
             showSuccess('Pembelian berhasil diproses!');
-            showReceive('Barang telah diterima dan dicatat!');
+            showReceive('Barang telah diterima dan dicatat! Resi telah diunduh.');
         }
 
         // Helper function to get day name
         function getDayName(date) {
             const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
             return days[date.getDay()];
+        }
+
+        // Show direct purchase form
+        function showDirectPurchase() {
+            document.getElementById('purchaseForm').classList.remove('hidden');
+            document.querySelector('.file-upload').closest('div').classList.add('hidden');
+            document.getElementById('toggleMethodText').textContent = 'Upload Excel';
+            // Scroll to form
+            document.getElementById('purchaseForm').scrollIntoView({ behavior: 'smooth' });
         }
 
         // Navigation functions
